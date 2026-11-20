@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 
@@ -16,9 +16,9 @@ class Movie:
         self._id = id
         self._title = title
         self._ranking = ranking
-        self._release_date = release_date
-        self._character_number = character_number
-        self._ticket_price = ticket_price
+        self.set_release_date(release_date)
+        self.set_character_number(character_number)
+        self.set_ticket_price(ticket_price)
         self._comment = comment
         self._type = type
 
@@ -44,18 +44,24 @@ class Movie:
         return self._release_date
 
     def set_release_date(self, release_date):
+        if not isinstance(release_date, date) or isinstance(release_date, datetime):
+            raise TypeError("Дата виходу має бути об'єктом date")
         self._release_date = release_date
 
     def get_character_number(self):
         return self._character_number
 
     def set_character_number(self, character_number):
+        if character_number < 0:
+            raise ValueError("Кількість персонажів не може бути від'ємною")
         self._character_number = character_number
 
     def get_ticket_price(self):
         return self._ticket_price
 
     def set_ticket_price(self, ticket_price):
+        if ticket_price < 0:
+            raise ValueError("Ціна квитка не може бути від'ємною")
         self._ticket_price = ticket_price
 
     def get_comment(self):
@@ -106,13 +112,26 @@ class Cinema:
         self._movies.append(movie)
 
     def remove_movie(self, movie_id):
+        if not any(movie.get_id() == movie_id for movie in self._movies):
+            raise ValueError(f"Фільм з ID {movie_id} не знайдено")
         self._movies = [m for m in self._movies if m.get_id() != movie_id]
 
     def sell_tickets(self, movie, day, count):
+        if movie not in self._movies:
+            raise ValueError("Фільм не належить цьому кінотеатру")
+        if not isinstance(day, date) or isinstance(day, datetime):
+            raise TypeError("Дата продажу має бути об'єктом date")
+        if not isinstance(count, int) or isinstance(count, bool):
+            raise TypeError("Кількість квитків має бути цілим числом")
+        if count < 0:
+            raise ValueError("Кількість квитків не може бути від'ємною")
+        if movie.get_release_date() > day:
+            raise ValueError("Не можна продавати квитки до дати виходу фільму")
+
         key = (movie.get_id(), day)
         self._tickets_sold[key] = self._tickets_sold.get(key, 0) + count
 
-    def calculateProfit(self, movie, day):
+    def calculate_profit(self, movie, day):
         sold = self._tickets_sold.get((movie.get_id(), day), 0)
         return sold * movie.get_ticket_price()
 
@@ -162,7 +181,7 @@ def main():
     cinema.sell_tickets(m1, day, 50)
     cinema.sell_tickets(m4, day, 30)
     for m in (m1, m4):
-        print(f"«{m.get_title()}»: {cinema.calculateProfit(m, day)} грн")
+        print(f"«{m.get_title()}»: {cinema.calculate_profit(m, day)} грн")
 
     print("\n--- Вибір фільму (жанр FANTASY, ціна до 200 грн) ---")
     chosen = cinema.select_movie(genre=MovieType.FANTASY, max_price=200)
